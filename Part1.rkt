@@ -10,3 +10,5 @@
 ; Not necessary: short-circuit evaluation of && or ||
 
 ;hello
+
+(require "simpleParser.scm")
