@@ -12,3 +12,5 @@
 ;hello
 
 (require "simpleParser.scm")
+
+(parser "firsttest.java")
