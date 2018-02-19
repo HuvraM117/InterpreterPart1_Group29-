@@ -1,11 +1,16 @@
 ; Raza Agha, Huvra Mehta, Peter Fedrizzi
 
-; Variables may store values of type int as well as true and false.
-; Not necessary: error checking on type
-; Not necessary: short-circuit evaluation of && or ||
-
 (require "simpleParser.scm")
 (parser "test.java")
+
+(parser "test1.java")
+;(M_state_main (parser "test1.java") '()) ; => 150
+(parser "test2.java")
+;(M_state_main (parser "test2.java") '()) ; => -4
+(parser "test3.java")
+;(M_state_main (parser "test3.java") '()) ; => 10
+(parser "test4.java")
+;(M_state_main (parser "test4.java") '()) ; => 16
 
 ; Structure of main routine
 (define M_state_main
@@ -241,3 +246,7 @@ expression state)) (M_value_int (operand2 expression state))))
 (define append_two_lists
   (lambda (lis1 lis2)
     (cons (append (car lis1) (car lis2)) (list (append (cadr lis1) (cadr lis2))))))
+
+
+; Not implemented: error checking on type
+; Not implemented: short-circuit evaluation of && or ||
