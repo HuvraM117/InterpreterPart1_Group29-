@@ -7,23 +7,21 @@
 ; INTERPRET
 (define interpret
   (lambda (filename)
-    (M_state_main (parser filename) '())))
+    (M_state_main (parser filename) '((return) (null)))))
 
 ; MAIN
 (define M_state_main
   (lambda (parselist S) ; takes a parse tree and state
     (cond
       ; this should have a helper that searches for the return variable!
-      ((null? parselist) (error "Finished parsing, no return statement detected!")) ; (M_state_main '() '()) => error
+      ((null? parselist) (get_state_variable 'return S)) ; (error "Finished parsing, no return statement detected!")) ; (M_state_main '() '()) => error
       ((not (list? (car parselist))) (error "Mistake! Fix M_state_main list handling...")) ; (M_state_main '(var a) '()) => error
-      ((equal? 'return (command parselist)) (M_state_return (firstlist parselist) S)) ; return
+      ((equal? 'return (command parselist)) (M_state_main (cdr parselist) (M_state_return (firstlist parselist) S))) ; return
       ((equal? 'var (command parselist)) (M_state_main (cdr parselist) (M_state_var (firstlist parselist) S))) ; variable 
       ((equal? '= (command parselist)) (M_state_main (cdr parselist) (M_state_assign (firstlist parselist) S))) ; assignment
       ((equal? 'if (command parselist)) (M_state_main (cdr parselist) (M_state_if (firstlist parselist) S))) ; if firstlist
       ((equal? 'while (command parselist)) (M_state_main (cdr parselist) (M_state_while (firstlist parselist) S))) ; while statement
       (else (error "What is going on?")))))
-
-; !!! - I think we need to change how states are passed for "if" and "while" parts - !!! 
 
 ; Abstractions for Main
 ; Retrieves command in next statement of parse tree
@@ -36,6 +34,58 @@
   (lambda (parselist)
     (car parselist)))
 
+; STATE FOR LIST - 2
+(define M_state_list
+  (lambda (statementlist S) ; takes a parse tree and state
+
+        
+      ; this should have a helper that searches for the return variable!
+      ((null? statementlist) S)
+      
+      ((equal? 'return (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_return (piece1 statementlist) S))) ; return
+      ((equal? 'var (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_var (piece1 statementlist) S))) ; variable 
+      ((equal? '= (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_assign (piece statementlist) S))) ; assignment
+      ((equal? 'if (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_if (firstlist statementlist) S))) ; if firstlist
+      ((equal? 'while (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_while (firstlist statementlist) S))) ; while statement
+      (else (error "What is going on?"))))
+
+; STATE FOR LIST
+;(define M_state_list
+;  (lambda (statementlist S) ; takes a parse tree and state
+;    (if ((null? statementlist) S)
+;        (if (list? (piece1 statementlist))
+;            ())
+;        (if (list? (piece2 statementList))
+;            ())
+;        (else ()))))
+;        
+;      ; this should have a helper that searches for the return variable!
+;      ((null? statementlist) S)
+;      
+;      ((equal? 'return (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_return (piece1 statementlist) S))) ; return
+;      ((equal? 'var (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_var (piece1 statementlist) S))) ; variable 
+;      ((equal? '= (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_assign (piece statementlist) S))) ; assignment
+;      ((equal? 'if (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_if (firstlist statementlist) S))) ; if firstlist
+;      ((equal? 'while (statecommand statementlist)) (M_state_list (cdr statementlist) (M_state_while (firstlist statementlist) S))) ; while statement
+;      (else (error "What is going on?")))))
+
+; Abstractions for Main
+; Retrieves command in next statement of parse tree
+(define statecommand
+  (lambda (statementlist)
+    (car statementlist)))
+
+(define piece1
+  (lambda (statementlist)
+    (cadr statementlist)))
+
+(define piece2
+  (lambda (statementlist)
+    (caddr statementlist)))
+          
+
+; !!! - I think we need to change how states are passed for "if" and "while" parts - !!! 
+
 ;;;;;;;;;;;
 
 ; RETURN
@@ -43,9 +93,10 @@
   (lambda (statement S)
     (cond
       ((null? statement) (error "Parser is broken"))
-      ((number? (return_expression statement)) (return_expression statement)) ; not necessary?
-      ((list? (return_expression statement)) (M_expression (return_expression statement) S)) ; change #t to #f for the return
-      (else (get_state_variable (return_expression statement) S))))) ; not necessary?
+      ((equal? 'null (get_state_variable 'return S)) (set_state_variable 'return (M_expression (return_expression statement) S) S))
+      (else S)))) ; not necessary?
+      ;((list? (return_expression statement)) (set_state_variable 'return (M_expression (return_expression statement) S) S)) ; change #t to #f for the return
+      ;(else (error "why?"))))) ;(get_state_variable (return_expression statement) S))))) ; not necessary?
 
 ; Retrieves the expression of a return statement;
 (define return_expression
@@ -253,8 +304,8 @@
 (interpret "test5.java") ; => 220
 
 ; PROBLEM: M_state_main cannot handle '(= x 3) only '((= x 3)(return 'something'))
-;(parser "test6.java")
-;(interpret "test6.java") ; => 5
+(parser "test6.java")
+(interpret "test6.java") ; => 5
 ;(parser "test7.java")
 ;(interpret "test7.java") ; => 6
 ;(parser "test8.java")
