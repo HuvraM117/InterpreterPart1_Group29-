@@ -44,7 +44,7 @@
     (cond
       ((null? statement) (error "Parser is broken"))
       ((number? (return_expression statement)) (return_expression statement)) ; not necessary?
-      ((list? (return_expression statement)) (M_expression (return_expression statement) S))
+      ((list? (return_expression statement)) (M_expression (return_expression statement) S)) ; change #t to #f for the return
       (else (get_state_variable (return_expression statement) S))))) ; not necessary?
 
 ; Retrieves the expression of a return statement;
@@ -101,6 +101,7 @@
       ((and (not (list? express)) (equal? express 'true)) #t) ; true = #t
       ((and (not (list? express)) (equal? express 'false)) #f) ; false = #f
       ((and (not (list? express)) (number? express)) express) ; number
+      ((and (not (list? express)) (equal? (get_state_variable express S) '?)) (error "Variable value not assigned")) ; variable value missing
       ((not (list? express)) (get_state_variable express S)) ; variable value
       ((member? (operator express) '(+ - * / %)) (M_value express S)) ; send list to M_value
       ((member? (operator express) '(! && || != == < > <= >=)) (M_boolean express S)) ; send list to M_boolean
@@ -207,7 +208,7 @@
   (lambda (var S)
     (cond
       ((number? var) var) ; not necessary?
-      ((null? S) (error "variable not found"))
+      ((null? S) (error "Variable not found"))
       ((eq? (caar S) var) (caadr S)) ; if variable is found return value
       (else (get_state_variable var (cons (cdar S) (list (cdadr S)))))))) ; reduce copy of state recrusively
 
@@ -266,7 +267,7 @@
 (parser "test10.java")
 (interpret "test10.java") ; return 6 * -(4 * 2) + 9; => -39
 
-; PROBLEM:
+; PROBLEM: This code should return an error, because y has not been declared
 ;(parser "test11.java")
 ;(interpret "test11.java") ; => This code should give an error (using before declaring)
 
