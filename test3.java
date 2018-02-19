@@ -1,3 +1,2 @@
-var z;
-z = 10;
+var z = 10;
 return z;

@@ -94,9 +94,9 @@
       ((and (not (list? express)) (equal? express 'false)) #f) ; false = #f
       ((and (not (list? express)) (number? express)) express) ; number
       ((not (list? express)) (get_state_variable express S)) ; variable value
-      ((member? (operator express) '(+,-,*,/,%)) (M_value express S)) ; send list to M_value
-      ((member? (operator express) '(!,&&,||,!=,==,<,>,<=,>=)) (M_boolean express S)) ; send list to M_boolean
-      (else (error "It's getting down here when it shouldn't have"))))) ; not necessary?
+      ((member? (operator express) '(+ - * / %)) (M_value express S)) ; send list to M_value
+      ((member? (operator express) '(! && || != == < > <= >=)) (M_boolean express S)) ; send list to M_boolean
+      (else (error "It's getting down here when it shouldn't have."))))) ; not necessary?
 
 ; Determines if operator is for boolean or int (helper function)
 (define member?
