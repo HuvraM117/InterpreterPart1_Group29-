@@ -4,18 +4,26 @@
 (require "simpleParser.scm")
 (parser "test.java")
 
+; INTERPRET
+(define interpret
+  (lambda (filename)
+    (M_state_main (parser filename) '())))
+
 ; MAIN
 (define M_state_main
   (lambda (parselist S) ; takes a parse tree and state
     (cond
+      ; this should have a helper that searches for the return variable!
       ((null? parselist) (error "Finished parsing, no return statement detected!")) ; (M_state_main '() '()) => error
-      ((not (list? (car parselist))) (error "Mistake! Fix M_expression...")) ; (M_state_main '(var a) '()) => error
+      ((not (list? (car parselist))) (error "Mistake! Fix M_state_main list handling...")) ; (M_state_main '(var a) '()) => error
       ((equal? 'return (command parselist)) (M_state_return (firstlist parselist) S)) ; return
-      ((equal? 'var (command parselist)) (M_state_main (cdr parselist) (M_state_var (firstlist parselist) S))) ; variable
+      ((equal? 'var (command parselist)) (M_state_main (cdr parselist) (M_state_var (firstlist parselist) S))) ; variable 
       ((equal? '= (command parselist)) (M_state_main (cdr parselist) (M_state_assign (firstlist parselist) S))) ; assignment
       ((equal? 'if (command parselist)) (M_state_main (cdr parselist) (M_state_if (firstlist parselist) S))) ; if firstlist
       ((equal? 'while (command parselist)) (M_state_main (cdr parselist) (M_state_while (firstlist parselist) S))) ; while statement
       (else (error "What is going on?")))))
+
+; !!! - I think we need to change how states are passed for "if" and "while" parts - !!! 
 
 ; Abstractions for Main
 ; Retrieves command in next statement of parse tree
@@ -31,7 +39,7 @@
 ;;;;;;;;;;;
 
 ; RETURN
-(define M_state_return
+(define M_state_return ; store a return variable and only update if it is still null
   (lambda (statement S)
     (cond
       ((null? statement) (error "Parser is broken"))
@@ -113,7 +121,7 @@
   (lambda (express S)
     (cond
       ((null? express) (error "M_expression is broken"))
-      ((equal? '! (operator express)) (not (M_expression (exp1 express) S)))
+      ((equal? '! (operator express)) (not (M_expression (exp1 express) S))) ; negates statement
       ((equal? '&& (operator express)) (and (M_expression (exp1 express) S) (M_expression (exp2 express) S)))
       ((equal? '|| (operator express)) (or (M_expression (exp1 express) S) (M_expression (exp2 express) S)))
       ((equal? '!= (operator express)) (not (equal? (M_expression (exp1 express) S) (M_expression (exp2 express) S))))
@@ -129,6 +137,7 @@
   (lambda (express S)
     (cond
       ((null? express) (error "M_expression is broken"))
+      ((and (equal? '- (operator express)) (null? (cddr express))) (* -1 (M_expression (exp1 express) S))) ; negative of statement ; abstraction needed?
       ((equal? '+ (operator express)) (+ (M_expression (exp1 express) S) (M_expression (exp2 express)S)))
       ((equal? '- (operator express)) (- (M_expression (exp1 express) S) (M_expression (exp2 express)S)))
       ((equal? '* (operator express)) (* (M_expression (exp1 express) S) (M_expression (exp2 express)S)))
@@ -156,9 +165,12 @@
 ; IF
 (define M_state_if
   (lambda (statement S)
-    (if (M_expression (condition statement) S)
-        (M_state_main (then statement) S)
-        (M_state_main (else statement) S))))
+    (if (null? (cdddr statement)) ; abstraction needed?
+        (if (M_expression (condition statement) S)
+            (M_state_main (then statement) S))
+        (if (M_expression (condition statement) S)
+        (M_state_main (then statement) S) ; make a list of lists?
+        (M_state_main (else statement) S)))))
 
 ; Abstractions for if-statement
 (define condition
@@ -167,7 +179,7 @@
 
 (define then ; Also used for while loop
   (lambda (if_statement)
-    (caddr if_statment)))
+    (caddr if_statement)))
 
 (define else
   (lambda (if_statement)
@@ -218,15 +230,86 @@
   (lambda (lis1 lis2)
     (cons (append (car lis1) (car lis2)) (list (append (cadr lis1) (cadr lis2))))))
 
+;;;;;;;;;;;
+
+; TESTS
+
 ; Not implemented: error checking on type
 ; Not implemented: side effects
 ; Not implemented: short-circuit evaluation of && or ||
+; Not implemented: true instead of #t
+; Not implemented: proper return structure
 
 (parser "test1.java")
-(M_state_main (parser "test1.java") '()) ; => 150
+(interpret "test1.java") ; => 150
 (parser "test2.java")
-(M_state_main (parser "test2.java") '()) ; => -4
+(interpret "test2.java") ; => -4
 (parser "test3.java")
-(M_state_main (parser "test3.java") '()) ; => 10
+(interpret "test3.java") ; => 10
 (parser "test4.java")
-(M_state_main (parser "test4.java") '()) ; => 16
+(interpret "test4.java") ; => 16
+(parser "test5.java")
+(interpret "test5.java") ; => 220
+
+; PROBLEM: M_state_main cannot handle '(= x 3) only '((= x 3)(return 'something'))
+;(parser "test6.java")
+;(interpret "test6.java") ; => 5
+;(parser "test7.java")
+;(interpret "test7.java") ; => 6
+;(parser "test8.java")
+;(interpret "test8.java") ; => 10
+
+; PROBLEM: Not sure.
+;(parser "test9.java")
+;(interpret "test9.java") ; => 5
+
+(parser "test10.java")
+(interpret "test10.java") ; return 6 * -(4 * 2) + 9; => -39
+
+; PROBLEM:
+;(parser "test11.java")
+;(interpret "test11.java") ; => This code should give an error (using before declaring)
+
+; PROBLEM: Assignment with another variable
+;(parser "test12.java")
+;(interpret "test12.java") ; => This code should give an error (using before declaring).
+
+; PROBLEM: Error for adding '? to stuff
+;(parser "test13.java")
+;(interpret "test13.java") ; => This code should give an error (using before assigning).
+;(parser "test14.java")
+;(interpret "test14.java") ; => This code should give an error (redefining). This is not a required error, but it would be nice if you could catch these.
+
+; PROBLEM: Fix this error simple error
+(parser "test15.java")
+(interpret "test15.java") ; => This code should return true (not #t).
+
+;(parser "test16.java")
+;(interpret "test16.java") ; => 100
+;(parser "test17.java")
+;(interpret "test17.java") ; => This code should return false (not #f).
+;(parser "test18.java")
+;(interpret "test18.java") ; => true
+;(parser "test19.java")
+;(interpret "test19.java") ; => 128
+;(parser "test20.java")
+;(interpret "test20.java") ; => 12
+
+
+; Additional Tests for Students Looking for an Extra Challenge...
+;(parser "test21.java")
+;(interpret "test21.java") ; => 30
+;(parser "test22.java")
+;(interpret "test22.java") ; => 11
+;(parser "test23.java")
+;(interpret "test23.java") ; => 1106
+;(parser "test24.java")
+;(interpret "test24.java") ; => 12
+;(parser "test25.java")
+;(interpret "test25.java") ; => 16
+;(parser "test26.java")
+;(interpret "test26.java") ; => 72
+;(parser "test27.java")
+;(interpret "test27.java") ; => 21
+;(parser "test28.java")
+;(interpret "test28.java") ; => 164
