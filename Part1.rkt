@@ -101,6 +101,7 @@
   (lambda (statement S)
     (cond
       ((null? statement) (error "Parser is broken"))
+      ((number? (get_state_variable (varname statement) S))  (set_state_variable (varname statement) (M_expression (assign_expression statement) S) S))
       (else (set_state_variable (varname statement) (M_expression (assign_expression statement) S) S)))))
 
 ; Abstractions for M_state_assign
@@ -281,8 +282,8 @@
 (interpret "test10.java") ; return 6 * -(4 * 2) + 9; => -39
 
 ; PROBLEM: This code should return an error, because y has not been declared
-(parser "test11.java")
-(interpret "test11.java") ; => This code should give an error (using before declaring)
+;(parser "test11.java")
+;(interpret "test11.java") ; => This code should give an error (using before declaring)
 
 ;(parser "test12.java")
 ;(interpret "test12.java") ; => This code should give an error (using before declaring).
