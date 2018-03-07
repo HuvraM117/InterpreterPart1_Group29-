@@ -256,7 +256,7 @@
 
 ;;;;;;;;;;;
 
-; TESTS
+; TESTS, for Part 2
 
 ; Not implemented: side effects
 ; Not implemented: error checking on type
@@ -264,62 +264,44 @@
 ; Not implemented: short-circuit evaluation of && or ||
 
 ;(parser "test1.java")
-;(interpret "test1.java") ; => 150
+;(interpret "test1.java") ; => 20
 ;(parser "test2.java")
-;(interpret "test2.java") ; => -4
+;(interpret "test2.java") ; => 164
 ;(parser "test3.java")
-;(interpret "test3.java") ; => 10
+;(interpret "test3.java") ; => 32
 ;(parser "test4.java")
-;(interpret "test4.java") ; => 16
+;(interpret "test4.java") ; => 2
 ;(parser "test5.java")
-;(interpret "test5.java") ; => 220
+;(interpret "test5.java") ; => This code should give an error.
 ;(parser "test6.java")
-;(interpret "test6.java") ; => 5
+;(interpret "test6.java") ; => 25
 ;(parser "test7.java")
-;(interpret "test7.java") ; => 6
+;(interpret "test7.java") ; => 21
 ;(parser "test8.java")
-;(interpret "test8.java") ; => 10
+;(interpret "test8.java") ; => 6
 ;(parser "test9.java")
-;(interpret "test9.java") ; => 5
+;(interpret "test9.java") ; => -1
 ;(parser "test10.java")
-;(interpret "test10.java") ; return 6 * -(4 * 2) + 9; => -39
-
+;(interpret "test10.java") ; => 789
 ;(parser "test11.java")
-;(interpret "test11.java") ; => This code should give an error (using before declaring)
+;(interpret "test11.java") ; => This code should give an error.
 ;(parser "test12.java")
-;(interpret "test12.java") ; => This code should give an error (using before declaring).
+;(interpret "test12.java") ; => This code should give an error.
 ;(parser "test13.java")
-;(interpret "test13.java") ; => This code should give an error (using before assigning).
-
+;(interpret "test13.java") ; => This code should give an error.
 ;(parser "test14.java")
-;(interpret "test14.java") ; => 30 - This is not a required error, this code should give an error (redefining).
+;(interpret "test14.java") ; => 12
 ;(parser "test15.java")
-;(interpret "test15.java") ; => This code should return true (not #t).
+;(interpret "test15.java") ; => 125
 ;(parser "test16.java")
-;(interpret "test16.java") ; => 100
+;(interpret "test16.java") ; => 110
 ;(parser "test17.java")
-;(interpret "test17.java") ; => This code should return false (not #f).
+;(interpret "test17.java") ; => 2000400
 ;(parser "test18.java")
-;(interpret "test18.java") ; => true
+;(interpret "test18.java") ; => 101
 ;(parser "test19.java")
-;(interpret "test19.java") ; => 128
-;(parser "test20.java")
-;(interpret "test20.java") ; => 12
+;(interpret "test19.java") ; => This code should give an error.
 
 ; Additional Tests for Students Looking for an Extra Challenge...
-;(parser "test21.java")
-;(interpret "test21.java") ; => 30
-;(parser "test22.java")
-;(interpret "test22.java") ; => 11
-;(parser "test23.java")
-;(interpret "test23.java") ; => 1106
-;(parser "test24.java")
-;(interpret "test24.java") ; => 12
-;(parser "test25.java")
-;(interpret "test25.java") ; => 16
-;(parser "test26.java")
-;(interpret "test26.java") ; => 72
-;(parser "test27.java")
-;(interpret "test27.java") ; => 21
-;(parser "test28.java")
-;(interpret "test28.java") ; => 164
+;(parser "test20.java")
+;(interpret "test20.java") ; => 21ss
