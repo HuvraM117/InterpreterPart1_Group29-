@@ -1,4 +1,4 @@
-; Interpreter Project - Part 1
+; Interpreter Project - Part 2
 ; GROUP 29:
 ; Raza Agha, Huvra Mehta, Peter Fedrizzi
 ; raa117, hsm20, pef21
@@ -36,6 +36,7 @@
       ((equal? '= (command parselist)) (M_state_main (nextlist parselist) (M_state_assign (firstlist parselist) S))) ; assignment
       ((equal? 'if (command parselist)) (M_state_main (nextlist parselist) (M_state_if (firstlist parselist) S))) ; if
       ((equal? 'while (command parselist)) (M_state_main (nextlist parselist) (M_state_while (firstlist parselist) S))) ; while
+      ;((equal? 'begin (command parselist)) (M_state_main (nextlist parselist) (M_state_block (firstlist parselist) S)))
       (else (error "Something bad happened, broken parser?")))))
 
 ; Abstractions for M_state_main
