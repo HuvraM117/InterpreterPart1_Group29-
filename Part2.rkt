@@ -24,7 +24,7 @@
 
 ;;;;;;;;;;;
 
-; MAIN
+; CPS? MAIN
 (define M_state_main
   (lambda (parselist S) ; takes a parse tree and state
     (cond
@@ -57,7 +57,7 @@
   
 ;;;;;;;;;;;
 
-; RETURN
+; CPS? RETURN
 (define M_state_return ; only update return if it has a value of null
   (lambda (statement S)
     (cond
@@ -73,7 +73,7 @@
 
 ;;;;;;;;;;;
 
-; VARIABLE
+; CPS? VARIABLE
 (define M_state_var
   (lambda (statement S)
     (cond
@@ -99,7 +99,7 @@
 
 ;;;;;;;;;;;
 
-; ASSIGNMENT
+; CPS? ASSIGNMENT
 (define M_state_assign
   (lambda (statement S)
     (cond
@@ -118,7 +118,7 @@
   (lambda (statement)
     (caddr statement)))
 
-;;;;;;;;;;;
+;;;;;;;;;;; This does not need to pass a continuation.
     
 ; EXPRESSION - Evaluates expression
 (define M_expression
@@ -189,7 +189,7 @@
 
 ;;;;;;;;;;;
 
-; IF
+; CPS? IF
 (define M_state_if
   (lambda (statement S)
     (if (null? (cdddr statement)) ; abstraction needed?
@@ -215,7 +215,7 @@
 
 ;;;;;;;;;;;
 
-; WHILE
+; CPS? WHILE
 (define M_state_while
   (lambda (statement S)
     (if (M_expression (condition statement) S)
@@ -226,7 +226,7 @@
  
 ; STATE HANDLING
 
-; This function takes a variable and finds the value associated with it within the state.
+; CPS? This function takes a variable and finds the value associated with it within the state.
 (define get_state_variable
   (lambda (var S)
     (cond
