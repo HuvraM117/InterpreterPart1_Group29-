@@ -23,8 +23,12 @@
       (else (error "Return type unknown")))))
 
 ;;;;;;;;;;;
-
+; Huvra 
+<<<<<<< HEAD
+; MAIN
+=======
 ; CPS? MAIN
+>>>>>>> b228ff63a91799dd741b855331e7cd81aa5a4e5e
 (define M_state_main
   (lambda (parselist S) ; takes a parse tree and state
     (cond
@@ -57,7 +61,11 @@
   
 ;;;;;;;;;;;
 
+<<<<<<< HEAD
+; RETURN
+=======
 ; CPS? RETURN
+>>>>>>> b228ff63a91799dd741b855331e7cd81aa5a4e5e
 (define M_state_return ; only update return if it has a value of null
   (lambda (statement S)
     (cond
@@ -73,7 +81,11 @@
 
 ;;;;;;;;;;;
 
+<<<<<<< HEAD
+; VARIABLE
+=======
 ; CPS? VARIABLE
+>>>>>>> b228ff63a91799dd741b855331e7cd81aa5a4e5e
 (define M_state_var
   (lambda (statement S)
     (cond
@@ -99,7 +111,11 @@
 
 ;;;;;;;;;;;
 
+<<<<<<< HEAD
+; ASSIGNMENT
+=======
 ; CPS? ASSIGNMENT
+>>>>>>> b228ff63a91799dd741b855331e7cd81aa5a4e5e
 (define M_state_assign
   (lambda (statement S)
     (cond
@@ -118,7 +134,11 @@
   (lambda (statement)
     (caddr statement)))
 
+<<<<<<< HEAD
+;;;;;;;;;;;
+=======
 ;;;;;;;;;;; This does not need to pass a continuation.
+>>>>>>> b228ff63a91799dd741b855331e7cd81aa5a4e5e
     
 ; EXPRESSION - Evaluates expression
 (define M_expression
@@ -189,7 +209,11 @@
 
 ;;;;;;;;;;;
 
+<<<<<<< HEAD
+; IF
+=======
 ; CPS? IF
+>>>>>>> b228ff63a91799dd741b855331e7cd81aa5a4e5e
 (define M_state_if
   (lambda (statement S)
     (if (null? (cdddr statement)) ; abstraction needed?
@@ -215,7 +239,11 @@
 
 ;;;;;;;;;;;
 
+<<<<<<< HEAD
+; WHILE
+=======
 ; CPS? WHILE
+>>>>>>> b228ff63a91799dd741b855331e7cd81aa5a4e5e
 (define M_state_while
   (lambda (statement S)
     (if (M_expression (condition statement) S)
@@ -231,7 +259,11 @@
 
 ; STATE HANDLING
 
+<<<<<<< HEAD
+; This function takes a variable and finds the value associated with it within the state.
+=======
 ; CPS? This function takes a variable and finds the value associated with it within the state.
+>>>>>>> b228ff63a91799dd741b855331e7cd81aa5a4e5e
 (define get_state_variable
   (lambda (var S)
     (cond
