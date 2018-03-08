@@ -1,5 +1,7 @@
 ; Interpreter Project - Part 1
+; GROUP 29:
 ; Raza Agha, Huvra Mehta, Peter Fedrizzi
+; raa117, hsm20, pef21
 
 (require "simpleParser.scm")
 ;(parser "test.java")
@@ -261,25 +263,25 @@
 ; Not implemented: short-circuit evaluation of && or ||
 
 ;(parser "test1.java")
-(interpret "test1.java") ; => 150
+;(interpret "test1.java") ; => 150
 ;(parser "test2.java")
-(interpret "test2.java") ; => -4
+;(interpret "test2.java") ; => -4
 ;(parser "test3.java")
-(interpret "test3.java") ; => 10
+;(interpret "test3.java") ; => 10
 ;(parser "test4.java")
-(interpret "test4.java") ; => 16
+;(interpret "test4.java") ; => 16
 ;(parser "test5.java")
-(interpret "test5.java") ; => 220
+;(interpret "test5.java") ; => 220
 ;(parser "test6.java")
-(interpret "test6.java") ; => 5
+;(interpret "test6.java") ; => 5
 ;(parser "test7.java")
-(interpret "test7.java") ; => 6
+;(interpret "test7.java") ; => 6
 ;(parser "test8.java")
-(interpret "test8.java") ; => 10
+;(interpret "test8.java") ; => 10
 ;(parser "test9.java")
-(interpret "test9.java") ; => 5
+;(interpret "test9.java") ; => 5
 ;(parser "test10.java")
-(interpret "test10.java") ; return 6 * -(4 * 2) + 9; => -39
+;(interpret "test10.java") ; return 6 * -(4 * 2) + 9; => -39
 
 ;(parser "test11.java")
 ;(interpret "test11.java") ; => This code should give an error (using before declaring)
@@ -289,19 +291,19 @@
 ;(interpret "test13.java") ; => This code should give an error (using before assigning).
 
 ;(parser "test14.java")
-(interpret "test14.java") ; => 30 - This is not a required error, this code should give an error (redefining).
+;(interpret "test14.java") ; => 30 - This is not a required error, this code should give an error (redefining).
 ;(parser "test15.java")
-(interpret "test15.java") ; => This code should return true (not #t).
+;(interpret "test15.java") ; => This code should return true (not #t).
 ;(parser "test16.java")
-(interpret "test16.java") ; => 100
+;(interpret "test16.java") ; => 100
 ;(parser "test17.java")
-(interpret "test17.java") ; => This code should return false (not #f).
+;(interpret "test17.java") ; => This code should return false (not #f).
 ;(parser "test18.java")
-(interpret "test18.java") ; => true
+;(interpret "test18.java") ; => true
 ;(parser "test19.java")
-(interpret "test19.java") ; => 128
+;(interpret "test19.java") ; => 128
 ;(parser "test20.java")
-(interpret "test20.java") ; => 12
+;(interpret "test20.java") ; => 12
 
 ; Additional Tests for Students Looking for an Extra Challenge...
 ;(parser "test21.java")

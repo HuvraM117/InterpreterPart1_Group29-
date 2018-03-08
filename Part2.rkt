@@ -8,10 +8,10 @@
 
 ;;;;;;;;;;;
 
-; INTERPRET
+; CPS ? INTERPRET
 (define interpret
   (lambda (filename)
-    (return_type (get_state_variable 'return (M_state_main (parser filename) '((return) (null))))))) ; initialize state
+    (return_type (get_state_variable 'return (M_state_main (parser filename) '((return) (null)) (lambda (v) v)))))) ; initialize state
 
 ; Return the proper value
 (define return_type
@@ -222,8 +222,13 @@
         (M_state_while statement (M_state_main (list (then statement)) S))
         S)))
 
-;;;;;;;;;;;A
- 
+;;;;;;;;;;;
+
+; BLOCK
+(define M_state_block
+  (lambda (statement S)
+    (if
+
 ; STATE HANDLING
 
 ; CPS? This function takes a variable and finds the value associated with it within the state.
@@ -304,4 +309,4 @@
 
 ; Additional Tests for Students Looking for an Extra Challenge...
 ;(parser "test20.java")
-;(interpret "test20.java") ; => 21ss
+;(interpret "test20.java") ; => 21
