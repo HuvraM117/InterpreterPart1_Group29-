@@ -6,7 +6,7 @@
 (require racket/trace)
 
 (require "simpleParser.scm")
-(parser "test.java")
+;(parser "test.java")
 
 ;;;;;;;;;;;
 
@@ -259,7 +259,8 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "messed up")))
-      (else ((addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2))))))))))))
+      ((equal? (car statement) 'begin) ((addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))
+      (else ((addLayer S (lambda (v) (M_state_main statement v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))))) ; maybe never reached ?
 
 (define addLayer
   (lambda (S return)
@@ -269,6 +270,38 @@
   (lambda (S return)
     (return (cadr S))))
 
+;;;;;;;;;;;
+
+; THROW
+
+; TRY - CATCH - FINALLY
+
+(define M_state_try
+  (lambda (statement S return)
+    (cond
+      ((null? statement) (error "why tho?"))
+      ((equals? (length statement) 4) 3)
+      ((equals? (length statement) 2) ((addLayer S (lambda (v) (M_state_main (statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))
+      ((equals? (direction statement) 'catch) 3)
+      ((equals? (direction statement) 'finally) 3)
+      (else (error "this project is insane")))))
+
+(define first_part
+  (lambda (try_statement)
+    (cadr try_statement)))
+
+(define second_part
+  (lambda (try_statement)
+    (caddr try_statement)))
+
+(define final_part
+  (lambda (try_statement)
+    (cadddr try_statement)))
+
+(define direction
+  (lambda (try_statement)
+    (caaddr try_statement)))
+           
 ;;;;;;;;;;;
 
 (define M_state_break
@@ -393,7 +426,7 @@
 ;(interpret "test14.java") ; => 12
 ;(parser "test15.java")
 ;(interpret "test15.java") ; => 125
-;(parser "test16.java")
+(parser "test16.java")
 ;(interpret "test16.java") ; => 110
 ;(parser "test17.java")
 ;(interpret "test17.java") ; => 2000400
