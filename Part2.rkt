@@ -364,13 +364,19 @@
 
 ;(define set_mother_state
 
+(define set_mother
+    (lambda (var value S)
+    (cond
+      ((eq? (set_mother_of_state_helper var value (cdr S)) '()) (cons (set_state_variable var value (car S)) (cdr S)))
+      (else (cons (car S) (set_mother_of_state_helper var value (cdr S)))))))
+
 (define set_mother_of_state_helper
   (lambda (var value S)
     (cond
-      ((null? S) (error "The state would never be like that"))
-      ((state_empty S) #f) ; do something else
-      ((if_variable_there v (car state))  (set_state_variable v (car state)) )
-       (else (cons (set_mother_of_state v (cdr state ) ) )  ) ) ) )
+      ((null? S) '())
+      ((state_empty S) '() ) ; do something else
+      ((if_variable_there var (car S)) (set_state_variable var value (car S)) )
+      (else (set_mother_of_state_helper var value (cdr S )) ))))
 
 ;it will return 2 for f if state is (( (f g h) (2 1 3)) ((a b) (10 11))))
 (define get_mother_of_state
