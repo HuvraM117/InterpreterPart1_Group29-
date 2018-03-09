@@ -209,15 +209,13 @@
 
 (define M_if
   (lambda (statement S return break)
-      (if (null? (else statement)) ; abstraction needed?
+      (if (null? (potentialElse statement)) ; abstraction needed?
         (if (M_expression (condition statement) S)
-            (lambda (S2)
-              (M_state_main (list (then statement)) S2))
+            (M_state_main (list (then statement)) S return)
             (return S))
         (if (M_expression (condition statement) S)
-            (lambda (S2)
-              (M_state_main (list (then statement)) S2)) ; make a list of lists?
-              (M_state_main (list (else statement)) S)))))
+            (M_state_main (list (then statement)) S return) ; make a list of lists?
+            (M_state_main (list (else statement)) S return)))))
 
 ; Abstractions for M_state_if
 (define condition
@@ -233,6 +231,7 @@
     (cadddr if_statement)))
 
 ;;;;;;;;;;;
+
 
 ; WHILE
 (define M_state_while
@@ -364,19 +363,20 @@
 
 ;(define set_mother_state
 
-(define set_mother
-    (lambda (var value S)
-    (cond
-      ((eq? (set_mother_of_state_helper var value (cdr S)) '()) (cons (set_state_variable var value (car S)) (cdr S)))
-      (else (cons (car S) (set_mother_of_state_helper var value (cdr S)))))))
+; This is for new values.
 
-(define set_mother_of_state_helper
+(define set_mother_declare
+    (lambda (var value S)
+      (cons (set_state_variable var value (car S)) (cdr S))))
+
+; set_mother_reassign is for values already in the list
+
+(define set_mother_reassign
   (lambda (var value S)
     (cond
       ((null? S) '())
-      ((state_empty S) '() ) ; do something else
-      ((if_variable_there var (car S)) (set_state_variable var value (car S)) )
-      (else (set_mother_of_state_helper var value (cdr S )) ))))
+      ((if_variable_there var (car S)) (cons (set_state_variable var value (car S)) (cdr S)))
+      (else (cons (car S) (set_mother_reassign var value (cdr S )) )))))
 
 ;it will return 2 for f if state is (( (f g h) (2 1 3)) ((a b) (10 11))))
 (define get_mother_of_state
