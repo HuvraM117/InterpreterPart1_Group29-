@@ -259,8 +259,9 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "messed up")))
-      ((equal? (car statement) 'begin) ((addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))
-      (else ((addLayer S (lambda (v) (M_state_main statement v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))))) ; maybe never reached ?
+      ;((equal? (car statement) 'begin)
+      (else ((addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2))))))))))))
+      ;(else ((addLayer S (lambda (v) (M_state_main statement v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))))) ; maybe never reached ?
 
 (define addLayer
   (lambda (S return)
@@ -273,18 +274,55 @@
 ;;;;;;;;;;;
 
 ; THROW
+(define M_state_throw
+  (lambda (statement S return)
+    (return (set_mother_of_state 'throw (exceptionType statement) S))))
+
+;abstraction
+(define exceptionType
+  (lambda (statement)
+    (cadr statement)))
 
 ; TRY - CATCH - FINALLY
 
 (define M_state_try
   (lambda (statement S return)
     (cond
-      ((null? statement) (error "why tho?"))
-      ((equals? (length statement) 4) 3)
-      ((equals? (length statement) 2) ((addLayer S (lambda (v) (M_state_main (statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))
-      ((equals? (direction statement) 'catch) 3)
-      ((equals? (direction statement) 'finally) 3)
+      ((null? statement) (return (error "why tho?")))
+      ((equals? (length statement) 4)
+       (addLayer S (lambda (v)
+                     (M_state_main (first_part statement) (lambda (v1)
+                                                            (M_catch (second_part statement) v1 (lambda (v2 )
+                                                                                                  (M_finally (second_part statement) v3 (lambda (v3)
+                                                                                                                                          (removeLayer v3 (lambda (v4) (return v4))))))))))))
+      ((equals? (length statement) 2) (M_state_block statement S return))
+      ((equals? (direction statement) 'catch)
+       (addLayer S (lambda (v)
+                     (M_state_main (first_part statement) (lambda (v1)
+                                                            (M_catch (second_part statement) v1 (lambda (v2 )
+                                                                                                  (removeLayer v2 (lambda (v3) (return v3))))))))))
+      ((equals? (direction statement) 'finally)
+       (addLayer S (lambda (v)
+                     (M_state_main (first_part statement) (lambda (v1)
+                                                            (M_finally (second_part statement) v1 (lambda (v2)
+                                                                                                    (removeLayer v2 (lambda (v3) (return v3))))))))))
       (else (error "this project is insane")))))
+
+(define M_catch
+  (lambda (statement S return)
+    ((equal? (exc statement) (get_mother_of_state 'throw S)) (M_state_main (caught statement) S return))))
+
+(define M_finally
+  (lambda (statement S return)
+    ((M_state_block statement S return))))
+
+(define caught
+  (lambda (catch_statement)
+    (caaadr catch_statement)))
+  
+(define exc
+  (lambda (catch_statement)
+    (caadr catch_statement)))
 
 (define first_part
   (lambda (try_statement)
