@@ -228,6 +228,41 @@
  
 ; STATE HANDLING
 
+;(define set_mother_state
+
+(define set_mother_of_state_helper
+  (lambda (var value S)
+    (cond
+      ((null? S) (error "The state would never be like that"))
+      ((state_empty S) #f) ; do something else
+      ((if_variable_there v (car state))  (set_state_variable v (car state)) )
+       (else (cons (set_mother_of_state v (cdr state ) ) )  ) ) ) )
+
+;it will return 2 for f if state is (( (f g h) (2 1 3)) ((a b) (10 11))))
+(define get_mother_of_state
+  (lambda (v state)
+    (cond
+      ((state_empty state) (error "Variable not found"))
+      ((if_variable_there v (car state)) (get_state_variable v (car state)))
+       (else (get_mother_of_state v (cdr state))))))
+
+(define state '(( (f g h) (2 1 3)) ((a b) (10 11))))
+
+(define if_variable_there
+  (lambda (var S)
+    (cond
+      ((null? (car S)) #f)
+      ((eq? (caar S) var) #t) ; if variable is found return value
+      (else (if_variable_there var (cons (cdar S) (list (cdadr S))))) ))) ; reduce copy of state recrusively
+
+;Checks for empty state on list of states like '(( () ()) (() ()))
+(define state_empty
+  (lambda (S)
+    (cond
+    ((not (null? (caar S))) #f)
+    ((and (null? (caar S)) (null? (cdr S))) #t)
+    (else (state_empty (cdr S))))))
+
 ; CPS? This function takes a variable and finds the value associated with it within the state.
 (define get_state_variable
   (lambda (var S)
