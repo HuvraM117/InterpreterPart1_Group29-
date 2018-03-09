@@ -6,7 +6,7 @@
 (require racket/trace)
 
 (require "simpleParser.scm")
-;(parser "test.java")
+(parser "test.java")
 
 ;;;;;;;;;;;
 
@@ -203,11 +203,21 @@
 ; IF
 (define M_state_if
   (lambda (statement S return)
-    (cond
-      ((and (null? (else statement)) (M_expression (condition statement) S)) (M_state_main (list (then statement)) S return))
-      ((null? (else statement)) (return S))
-      ((M_expression (condition statement) S) (M_state_main (list (then statement)) S return))
-      (else (M_state_main (list (else statement)) S return)))))
+    (call/cc
+     (lambda (break)
+       (M_if statement S return break)))))
+
+(define M_if
+  (lambda (statement S return break)
+      (if (null? (else statement)) ; abstraction needed?
+        (if (M_expression (condition statement) S)
+            (lambda (S2)
+              (M_state_main (list (then statement)) S2))
+            (return S))
+        (if (M_expression (condition statement) S)
+            (lambda (S2)
+              (M_state_main (list (then statement)) S2)) ; make a list of lists?
+              (M_state_main (list (else statement)) S)))))
 
 ; Abstractions for M_state_if
 (define condition
@@ -227,9 +237,19 @@
 ; WHILE
 (define M_state_while
   (lambda (statement S return)
+    (call/cc
+     (lambda (break)
+       (M_state_while_helper statement S return break)))))
+
+(define M_state_while_helper
+  (lambda (statement S return break)
     (cond
-      ((M_expression (condition statement) S) (M_state_main (list (then statement)) S (lambda (v1) (M_state_while statement v1 (lambda (v) (return v))))))
-      (else (return S)))))
+      ((M_expression (condition statement) S)
+       (lambda (v)
+         (if v
+             (lambda (S2) (M_state_while_helper (list (then statement)) S2 return break)) ;call the the then statement on a second instance of state 
+             break)
+      (else (return S)))))))
 
 ;;;;;;;;;;;
 
@@ -250,6 +270,24 @@
     (return (cadr S))))
 
 ;;;;;;;;;;;
+
+(define M_state_break
+  (lambda (S return)
+    (removeLayer S (lambda (v) v))))
+
+(define M_state_continue
+  (lambda (statement S return)
+    (call/cc
+     (lambda (break)
+       (M_continue statement S return break)))))
+
+;(define M_continue
+ ; (lambda (statement S return break)
+  ;  (
+
+
+;;;;;;;;;;;
+
  
 ; STATE HANDLING
 
