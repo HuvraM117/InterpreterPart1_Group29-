@@ -1,7 +1,9 @@
-; Interpreter Project - Part 2
+; Interpreter Project - Part 1
 ; GROUP 29:
 ; Raza Agha, Huvra Mehta, Peter Fedrizzi
 ; raa117, hsm20, pef21
+
+(require racket/trace)
 
 (require "simpleParser.scm")
 ;(parser "test.java")
@@ -11,7 +13,7 @@
 ; INTERPRET
 (define interpret
   (lambda (filename)
-    (return_type (get_state_variable 'return (M_state_main (parser filename) '((return) (null))))))) ; initialize state
+    (return_type (get_state_variable 'return (M_state_main (parser filename) '((return) (null)) (lambda (v) v)))))) ; initialize state
 
 ; Return the proper value
 (define return_type
@@ -24,23 +26,28 @@
 
 ;;;;;;;;;;;
 
-;Test - Peter
-
-; CPS? MAIN
+; MAIN
+; MAIN
 (define M_state_main
-  (lambda (parselist S) ; takes a parse tree and state
+  (lambda (parselist S return) ; takes a parse tree and state
     (cond
-      ((null? parselist) S) ; end of parse tree
-      ((not (list? parselist)) (error "Input cannot be atom")) ; (M_state_main 'var '()) => error
-      ((not (list? (firstlist parselist))) (error "Input cannot be single list")) ; (M_state_main '(var a) '()) => error
-      ((equal? 'return (command parselist)) (M_state_main (nextlist parselist) (M_state_return (firstlist parselist) S))) ; return
-      ((equal? 'var (command parselist)) (M_state_main (nextlist parselist) (M_state_var (firstlist parselist) S))) ; variable 
-      ((equal? '= (command parselist)) (M_state_main (nextlist parselist) (M_state_assign (firstlist parselist) S))) ; assignment
-      ((equal? 'if (command parselist)) (M_state_main (nextlist parselist) (M_state_if (firstlist parselist) S))) ; if
-      ((equal? 'while (command parselist)) (M_state_main (nextlist parselist) (M_state_while (firstlist parselist) S))) ; while
-      ;((equal? 'begin (command parselist)) (M_state_main (nextlist parselist) (M_state_block (firstlist parselist) S)))
-      (else (error "Something bad happened, broken parser?")))))
+      ((null? parselist) (return S)) ; end of parse tree
+      ((not (list? parselist)) ( return (error "Input cannot be atom"))) ; (M_state_main 'var '()) => error
+      ((not (list? (firstlist parselist))) (return (error "Input cannot be single list"))) ; (M_state_main '(var a) '()) => error
+      ((equal? 'return (command parselist)) (M_state_main (nextlist parselist) (M_state_return (firstlist parselist) S return) return)) ; return
+      ((equal? 'var (command parselist)) (M_state_main (nextlist parselist) (M_state_var (firstlist parselist) S return) return)) ; variable 
+      ((equal? '= (command parselist)) (M_state_main (nextlist parselist) (M_state_assign (firstlist parselist) S return) return)) ; assignment
+      ((equal? 'if (command parselist)) (M_state_main (nextlist parselist) (M_state_if (firstlist parselist) S return) return)) ; if
+      ((equal? 'while (command parselist)) (M_state_main (nextlist parselist) (M_state_while (firstlist parselist) S return) return)) ; while
 
+      ;do new stuff
+      ((equal? 'begin (command parselist)) (M_state_main (nextlist parselist) (M_state_block (firstlist parselist) S return) return)); creates new layer
+      ((equal? 'break (command parseList)) (M_state_main (nextlist parselist) (M_state_break (firstlist parselist) S return) return)); break
+      ((equal? 'continue (command parseList)) (M_state_main (nextlist parselist) (M_state_continue (firstlist parselist return) S) return)); continue
+      ((equal? 'throw (command parseList)) (M_state_main (nextlist parselist) (M_state_throw (firstlist parselist) S return) return)); throw
+      ((equal? 'try (command parseList)) (M_state_main (nextlist parselist) (M_state_try (firstlist parselist) S return) return)); try
+      
+      (else (error "Something bad happened, broken parser?")))))
 ; Abstractions for M_state_main
 ; Retrieves command in next statement of parse tree
 (define command
@@ -59,13 +66,13 @@
   
 ;;;;;;;;;;;
 
-; CPS? RETURN
+; RETURN
 (define M_state_return ; only update return if it has a value of null
-  (lambda (statement S)
+  (lambda (statement S return)
     (cond
-      ((null? statement) (error "Parser is broken?"))
-      ((equal? 'null (get_state_variable 'return S)) (set_state_variable 'return (M_expression (return_expression statement) S) S))
-      (else S))))
+      ((null? statement) (return (error "Parser is broken?")))
+      ((equal? 'null (get_state_variable 'return S)) (return (set_state_variable 'return (M_expression (return_expression statement) S) S)))
+      (else (return S)))))
 
 ; Abstractions for M_state_return
 ; Retrieves the expression of a return statement;
@@ -75,13 +82,13 @@
 
 ;;;;;;;;;;;
 
-; CPS? VARIABLE
+; VARIABLE
 (define M_state_var
-  (lambda (statement S)
+  (lambda (statement S return)
     (cond
-      ((null? statement) (error "Parser is broken"))
-      ((null? (var_list statement)) (set_state_variable (varname statement) '? S))
-      (else (set_state_variable (varname statement) (M_expression (var_expression statement) S) S)))))
+      ((null? statement) (return (error "Parser is broken")))
+      ((null? (var_list statement)) (return (set_state_variable (varname statement) '? S)))
+      (else (return (set_state_variable (varname statement) (M_expression (var_expression statement) S) S))))))
 
 ; Abstractions for M_state_var
 ; Variable name
@@ -101,13 +108,13 @@
 
 ;;;;;;;;;;;
 
-; CPS? ASSIGNMENT
+; ASSIGNMENT
 (define M_state_assign
-  (lambda (statement S)
+  (lambda (statement S return)
     (cond
-      ((null? statement) (error "Parser is broken"))
-      ((number? (get_state_variable (varname statement) S))  (set_state_variable (varname statement) (M_expression (assign_expression statement) S) S))
-      (else (set_state_variable (varname statement) (M_expression (assign_expression statement) S) S)))))
+      ((null? statement) (return (error "Parser is broken")))
+      ((number? (get_state_variable (varname statement) S)) (return (set_state_variable (varname statement) (M_expression (assign_expression statement) S) S)))
+      (else (return (set_state_variable (varname statement) (M_expression (var_expression statement) S) S))))))
 
 ; Abstractions for M_state_assign
 ; Variable name
@@ -120,7 +127,9 @@
   (lambda (statement)
     (caddr statement)))
 
-;;;;;;;;;;; This does not need to pass a continuation.
+(trace M_state_assign)
+
+;;;;;;;;;;;
     
 ; EXPRESSION - Evaluates expression
 (define M_expression
@@ -191,12 +200,12 @@
 
 ;;;;;;;;;;;
 
-;IF 
+; IF
 (define M_state_if
   (lambda (statement S return)
     (cond
-      ((and (null? (cdddr statement))(M_expression (condition statement) S)) (M_state_main (list (then statement)) S return))
-      ((null? (cdddr statement)) (return S))
+      ((and (null? (else statement)) (M_expression (condition statement) S)) (M_state_main (list (then statement)) S return))
+      ((null? (else statement)) (return S))
       ((M_expression (condition statement) S) (M_state_main (list (then statement)) S return))
       (else (M_state_main (list (else statement)) S return)))))
 
@@ -219,7 +228,7 @@
 (define M_state_while
   (lambda (statement S return)
     (cond
-      ((M_expression (condition statement) S) (M_state_main (list (then statement) S (lambda (v) (M_state_white statement v (lambda (v1) (return v1)))))))
+      ((M_expression (condition statement) S) (M_state_main (list (then statement)) S (lambda (v1) (M_state_while statement v1 (lambda (v) (return v))))))
       (else (return S)))))
 
 ;;;;;;;;;;;
@@ -229,18 +238,18 @@
 (define M_state_block
   (lambda (statement S return)
     (cond
-      ((null? statement) (return (error “fucked up”)))
-      (else ((addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda v1 (removeLayer v1 (lambda (v2) return (v2))))))))))))
+      ((null? statement) (return (error "messed up")))
+      (else ((addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2))))))))))))
 
 (define addLayer
-  (lambda (S)
-    (list (list '() '()) S)))
+  (lambda (S return)
+    (return (list (list '() '()) S))))
 
 (define removeLayer
-  (lambda (S)
-    (cadr S)))
+  (lambda (S return)
+    (return (cadr S))))
 
-;;;;;;;;;;;A
+;;;;;;;;;;;
  
 ; STATE HANDLING
 
