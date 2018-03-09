@@ -113,8 +113,8 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "Parser is broken")))
-      ((number? (get_state_variable (varname statement) S)) (return (set_state_variable (varname statement) (M_expression (assign_expression statement) S) S)))
-      (else (return (set_state_variable (varname statement) (M_expression (var_expression statement) S) S))))))
+      ((number? (get_mother (varname statement) S)) (return (set_state_mother (varname statement) (M_expression (assign_expression statement) S) S)))
+      (else (return (set (varname statement) (M_expression (var_expression statement) S) S))))))
 
 ; Abstractions for M_state_assign
 ; Variable name
