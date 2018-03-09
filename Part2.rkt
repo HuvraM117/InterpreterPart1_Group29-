@@ -203,13 +203,7 @@
 ; IF
 (define M_state_if
   (lambda (statement S return)
-    (call/cc
-     (lambda (break)
-       (M_if statement S return break)))))
-
-(define M_if
-  (lambda (statement S return break)
-      (if (null? (potentialElse statement)) ; abstraction needed?
+    (if (null? (potentialElse statement)) ; abstraction needed?
         (if (M_expression (condition statement) S)
             (M_state_main (list (then statement)) S return)
             (return S))
