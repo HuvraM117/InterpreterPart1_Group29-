@@ -191,16 +191,14 @@
 
 ;;;;;;;;;;;
 
-; CPS? IF
+;IF 
 (define M_state_if
-  (lambda (statement S)
-    (if (null? (cdddr statement)) ; abstraction needed?
-        (if (M_expression (condition statement) S)
-            (M_state_main (list (then statement)) S)
-            S)
-        (if (M_expression (condition statement) S)
-        (M_state_main (list (then statement)) S) ; make a list of lists?
-        (M_state_main (list (else statement)) S)))))
+  (lambda (statement S return)
+    (cond
+      ((and (null? (cdddr statement))(M_expression (condition statement) S)) (M_state_main (list (then statement)) S return))
+      ((null? (cdddr statement)) (return S))
+      ((M_expression (condition statement) S) (M_state_main (list (then statement)) S return))
+      (else (M_state_main (list (else statement)) S return)))))
 
 ; Abstractions for M_state_if
 (define condition
@@ -217,12 +215,30 @@
 
 ;;;;;;;;;;;
 
-; CPS? WHILE
+; WHILE
 (define M_state_while
-  (lambda (statement S)
-    (if (M_expression (condition statement) S)
-        (M_state_while statement (M_state_main (list (then statement)) S))
-        S)))
+  (lambda (statement S return)
+    (cond
+      ((M_expression (condition statement) S) (M_state_main (list (then statement) S (lambda (v) (M_state_white statement v (lambda (v1) (return v1)))))))
+      (else (return S)))))
+
+;;;;;;;;;;;
+
+;BLOCK
+
+(define M_state_block
+  (lambda (statement S return)
+    (cond
+      ((null? statement) (return (error “fucked up”)))
+      (else ((addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda v1 (removeLayer v1 (lambda (v2) return (v2))))))))))))
+
+(define addLayer
+  (lambda (S)
+    (list (list '() '()) S)))
+
+(define removeLayer
+  (lambda (S)
+    (cadr S)))
 
 ;;;;;;;;;;;A
  
