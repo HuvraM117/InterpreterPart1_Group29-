@@ -13,7 +13,7 @@
 ; INTERPRET
 (define interpret
   (lambda (filename)
-    (return_type (get_state_variable 'return (M_state_main (parser filename) '((return) (null)) (lambda (v) v)))))) ; initialize state
+    (return_type (get_mother_of_state 'return (M_state_main (parser filename) '(((return) (null))) (lambda (v) v)))))) ; initialize state
 
 ; Return the proper value
 (define return_type
@@ -27,7 +27,6 @@
 ;;;;;;;;;;;
 
 ; MAIN
-; MAIN
 (define M_state_main
   (lambda (parselist S return) ; takes a parse tree and state
     (cond
@@ -35,6 +34,7 @@
       ((not (list? parselist)) ( return (error "Input cannot be atom"))) ; (M_state_main 'var '()) => error
       ((not (list? (firstlist parselist))) (return (error "Input cannot be single list"))) ; (M_state_main '(var a) '()) => error
       ((equal? 'return (command parselist)) (M_state_main (nextlist parselist) (M_state_return (firstlist parselist) S return) return)) ; return
+      
       ((equal? 'var (command parselist)) (M_state_main (nextlist parselist) (M_state_var (firstlist parselist) S return) return)) ; variable 
       ((equal? '= (command parselist)) (M_state_main (nextlist parselist) (M_state_assign (firstlist parselist) S return) return)) ; assignment
       ((equal? 'if (command parselist)) (M_state_main (nextlist parselist) (M_state_if (firstlist parselist) S return) return)) ; if
@@ -71,7 +71,7 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "Parser is broken?")))
-      ((equal? 'null (get_state_variable 'return S)) (return (set_state_variable 'return (M_expression (return_expression statement) S) S)))
+      ((equal? 'null (get_state_variable 'return S)) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
       (else (return S)))))
 
 ; Abstractions for M_state_return
@@ -87,8 +87,10 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "Parser is broken")))
-      ((null? (var_list statement)) (return (set_state_variable (varname statement) '? S)))
-      (else (return (set_state_variable (varname statement) (M_expression (var_expression statement) S) S))))))
+      ((null? (var_list statement)) (return (set_mother_declare (varname statement) '? S)))
+      (else (return (set_mother_declare (varname statement) (M_expression (var_expression statement) S) S))))))
+
+(trace M_state_var)
 
 ; Abstractions for M_state_var
 ; Variable name
@@ -113,8 +115,8 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "Parser is broken")))
-      ((number? (get_mother (varname statement) S)) (return (set_state_mother (varname statement) (M_expression (assign_expression statement) S) S)))
-      (else (return (set (varname statement) (M_expression (var_expression statement) S) S))))))
+      ((number? (get_mother_of_state (varname statement) S)) (return (set_mother_reassign (varname statement) (M_expression (assign_expression statement) S) S)))
+      (else (return (set_mother_declare (varname statement) (M_expression (var_expression statement) S) S))))))
 
 ; Abstractions for M_state_assign
 ; Variable name
@@ -139,7 +141,7 @@
       ((and (not (list? express)) (equal? express 'true)) #t) ; true = #t
       ((and (not (list? express)) (equal? express 'false)) #f) ; false = #f
       ((and (not (list? express)) (number? express)) express) ; number
-      ((and (not (list? express)) (equal? (get_state_variable express S) '?)) (error "Variable value not assigned")) ; variable value missing
+      ((and (not (list? express)) (equal? (get_mother_of_state express S) '?)) (error "Variable value not assigned")) ; variable value missing
       ((not (list? express)) (get_state_variable express S)) ; variable value
       ((member? (operator express) '(+ - * / %)) (M_value express S)) ; send list to M_value
       ((member? (operator express) '(! && || != == < > <= >=)) (M_boolean express S)) ; send list to M_boolean
@@ -248,17 +250,19 @@
 
 ;BLOCK
 
+
 (define M_state_block
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "messed up")))
-      ;((equal? (car statement) 'begin)
-      (else ((addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2))))))))))))
-      ;(else ((addLayer S (lambda (v) (M_state_main statement v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))))) ; maybe never reached ?
+      (else (addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))))
+
+(trace M_state_block)
+(trace M_state_main)
 
 (define addLayer
   (lambda (S return)
-    (return (list (list '() '()) S))))
+    (return  (cons (list '() '()) S))))
 
 (define removeLayer
   (lambda (S return)
@@ -372,6 +376,8 @@
       ((if_variable_there var (car S)) (cons (set_state_variable var value (car S)) (cdr S)))
       (else (cons (car S) (set_mother_reassign var value (cdr S )) )))))
 
+(trace set_mother_declare)
+
 ;it will return 2 for f if state is (( (f g h) (2 1 3)) ((a b) (10 11))))
 (define get_mother_of_state
   (lambda (v state)
@@ -412,16 +418,21 @@
   (lambda (var value S)
     (cond
       ((null? S) (append S (cons (list var) (list (list value))))) ; when state is empty, it creates the state
+      ((and (null? (car S)) (null? (cadr S) )) (cons (list var) (list (list value))))
       ((and (null? (cdar S)) (not (eq? (caar S) var))) ; terminating condition when the state has only one last element and that is not equal to the input variable
        (cons (cons var (car S)) (list (cons value (cadr S))))) ; then the new variable is appended to the state in the right place
       ((eq? (caar S) var) (cons (car S) (list (append (list value) (cdadr S))))) ; if input variable is present then change the associated value
       (else (append_two_lists (cons (list (caar S)) (list (list (caadr S)))) (set_state_variable var value (cons (cdar S) (list (cdadr S)))))))))
+
+(trace set_state_variable)
 ; the last statement puts the first variable from state and it's value on the stack and later on appends it to the new state.
 ; I create my own append function because it has to append things like '((a b c) (10 11 12) => ("fake cons" '((a) (10)) '((b c)(11 12))) for example.
 
 (define append_two_lists ; "fake cons"
   (lambda (lis1 lis2)
     (cons (append (car lis1) (car lis2)) (list (append (cadr lis1) (cadr lis2))))))
+
+(trace M_expression)
 
 ; Abstractions for state handling ???
 
