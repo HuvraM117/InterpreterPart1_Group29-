@@ -345,31 +345,22 @@
   (lambda (statement S return)
     (M_state_Main statement S return)))
 
-;;;;;;;;;;;
+;;;;STATE LAYER HANDLING. The state are of the layer form (((f g h)(2 1 3)) ((a b)(10 11)))) and will break if they are ((f g h)(2 1 3) (a b)(10 11)) with missing parenthesis.
 
- 
-; STATE HANDLING
-
-;(define set_mother_state
-
-; This is for new values.
-
+;This is for declaring a variable in the state.
 (define set_mother_declare
     (lambda (var value S)
       (cons (set_state_variable var value (car S)) (cdr S))))
 
-; set_mother_reassign is for values already in the list
-
+;This is for assigning a declared variable.
 (define set_mother_reassign
   (lambda (var value S)
     (cond
       ((null? S) '())
       ((if_variable_there var (car S)) (cons (set_state_variable var value (car S)) (cdr S)))
-      (else (cons (car S) (set_mother_reassign var value (cdr S )) )))))
+      (else (cons (car S) (set_mother_reassign var value (cdr S )))))))
 
-(trace set_mother_declare)
-
-;it will return 2 for f if state is (( (f g h) (2 1 3)) ((a b) (10 11))))
+;it will return the value if the variable is in the list.
 (define get_mother_of_state
   (lambda (v state)
     (cond
@@ -377,22 +368,28 @@
       ((if_variable_there v (car state)) (get_state_variable v (car state)))
        (else (get_mother_of_state v (cdr state))))))
 
-(define if_variable_there
-  (lambda (var S)
-    (cond
-      ((null? (car S)) #f)
-      ((eq? (caar S) var) #t) ; if variable is found return value
-      (else (if_variable_there var (cons (cdar S) (list (cdadr S))))) ))) ; reduce copy of state recrusively
 
 ;Checks for empty state on list of states like '(( () ()) (() ()))
 (define state_empty
   (lambda (S)
     (cond
-    ((not (null? (caar S))) #f)
-    ((and (null? (caar S)) (null? (cdr S))) #t)
-    (else (state_empty (cdr S))))))
+      ((null? S) #t)
+      ((not (null? (caar S))) #f)
+      ((and (null? (caar S)) (null? (cdr S))) #t)
+      (else (state_empty (cdr S))))))
 
-; CPS? This function takes a variable and finds the value associated with it within the state.
+;;;;STATE HANDLING. These functions use states that are not of the layer form and assume there is only one state.
+
+;Returns true if a variable is in one state.
+(define if_variable_there
+  (lambda (var S)
+    (cond
+      ((null? (car S)) #f)
+      ((eq? (caar S) var) #t)
+      (else (if_variable_there var (cons (cdar S) (list (cdadr S))))) ))) 
+
+
+; Copied from Assignment. Works only on one state and takes a variable and finds the value.
 (define get_state_variable
   (lambda (var S)
     (cond
@@ -401,10 +398,8 @@
       ((eq? (caar S) var) (caadr S)) ; if variable is found return value
       (else (get_state_variable var (cons (cdar S) (list (cdadr S)))))))) ; reduce copy of state recrusively
 
-(trace get_mother_of_state)
 
-; This function acts like assignment. It takes a variable and value and the state and returns the new state.
-; If the variable is already present it changes the value of that variable. Remember state is like ((a b c) (10 11 12)).
+; Copied from Assignment#1. This function acts like assignment. It takes a variable and value and one state and returns the new state.
 (define set_state_variable
   (lambda (var value S)
     (cond
@@ -415,16 +410,13 @@
       ((eq? (caar S) var) (cons (car S) (list (append (list value) (cdadr S))))) ; if input variable is present then change the associated value
       (else (append_two_lists (cons (list (caar S)) (list (list (caadr S)))) (set_state_variable var value (cons (cdar S) (list (cdadr S)))))))))
 
-; the last statement puts the first variable from state and it's value on the stack and later on appends it to the new state.
-; I create my own append function because it has to append things like '((a b c) (10 11 12) => ("fake cons" '((a) (10)) '((b c)(11 12))) for example.
-
-(define append_two_lists ; "fake cons"
+(define append_two_lists ; ;a helper function for set_state_variable
   (lambda (lis1 lis2)
     (cons (append (car lis1) (car lis2)) (list (append (cadr lis1) (cadr lis2))))))
 
-; Abstractions for state handling ???
 
 ;;;;;;;;;;;
+
 
 ; TESTS, for Part 2
 
