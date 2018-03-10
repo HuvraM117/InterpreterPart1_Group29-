@@ -71,7 +71,7 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "Parser is broken?")))
-      ((equal? 'null (get_state_variable 'return S)) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
+      ((equal? 'null (get_mother_of_state 'return S)) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
       (else (return S)))))
 
 ; Abstractions for M_state_return
@@ -142,7 +142,7 @@
       ((and (not (list? express)) (equal? express 'false)) #f) ; false = #f
       ((and (not (list? express)) (number? express)) express) ; number
       ((and (not (list? express)) (equal? (get_mother_of_state express S) '?)) (error "Variable value not assigned")) ; variable value missing
-      ((not (list? express)) (get_state_variable express S)) ; variable value
+      ((not (list? express)) (get_mother_of_state express S)) ; variable value
       ((member? (operator express) '(+ - * / %)) (M_value express S)) ; send list to M_value
       ((member? (operator express) '(! && || != == < > <= >=)) (M_boolean express S)) ; send list to M_boolean
       (else (error "It's getting down here when it shouldn't have."))))) ; not necessary?
@@ -255,18 +255,21 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "messed up")))
-      (else (addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))))
+      (else (M_state_main (cdr statement) (addLayer S) return) (addLayer S)))))
 
 (trace M_state_block)
 (trace M_state_main)
 
 (define addLayer
-  (lambda (S return)
-    (return  (cons (list '() '()) S))))
+  (lambda (S)
+    (cons (list '() '()) S)))
 
 (define removeLayer
-  (lambda (S return)
-    (return (cadr S))))
+  (lambda (S)
+    (cadr S)))
+
+(trace addLayer)
+(trace removeLayer)
 
 ;;;;;;;;;;;
 
@@ -339,19 +342,15 @@
            
 ;;;;;;;;;;;
 
+;BREAK
 (define M_state_break
   (lambda (S return)
     (removeLayer S (lambda (v) v))))
 
+;CONTINUE
 (define M_state_continue
-  (lambda (statement S return)
-    (call/cc
-     (lambda (break)
-       (M_continue statement S return break)))))
-
-;(define M_continue
- ; (lambda (statement S return break)
-  ;  (
+  (lambda (statement S return stop)
+    (stop (M_state_Main statement S return))))
 
 
 ;;;;;;;;;;;
@@ -411,6 +410,9 @@
       ((null? (car S)) (error "Variable not found"))
       ((eq? (caar S) var) (caadr S)) ; if variable is found return value
       (else (get_state_variable var (cons (cdar S) (list (cdadr S)))))))) ; reduce copy of state recrusively
+
+(trace get_state_variable)
+(trace get_mother_of_state)
 
 ; This function acts like assignment. It takes a variable and value and the state and returns the new state.
 ; If the variable is already present it changes the value of that variable. Remember state is like ((a b c) (10 11 12)).
@@ -475,7 +477,7 @@
 ;(interpret "test14.java") ; => 12
 ;(parser "test15.java")
 ;(interpret "test15.java") ; => 125
-(parser "test16.java")
+;(parser "test16.java")
 ;(interpret "test16.java") ; => 110
 ;(parser "test17.java")
 ;(interpret "test17.java") ; => 2000400
