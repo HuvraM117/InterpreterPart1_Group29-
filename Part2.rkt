@@ -434,8 +434,8 @@
 ; Not implemented: error checking for redefine
 ; Not implemented: short-circuit evaluation of && or ||
 
-;(parser "test1.java")
-;(interpret "test1.java") ; => 20
+(parser "test1.java")
+(interpret "test1.java") ; => 20
 ;(parser "test2.java")
 ;(interpret "test2.java") ; => 164
 ;(parser "test3.java")
