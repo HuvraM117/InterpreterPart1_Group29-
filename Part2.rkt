@@ -1,9 +1,9 @@
-; Interpreter Project - Part 1
+; Interpreter Project - Part 2
 ; GROUP 29:
 ; Raza Agha, Huvra Mehta, Peter Fedrizzi
 ; raa117, hsm20, pef21
 
-(require racket/trace)
+;(require racket/trace)
 
 (require "simpleParser.scm")
 ;(parser "test.java")
@@ -33,21 +33,16 @@
       ((null? parselist) (return S)) ; end of parse tree
       ((not (list? parselist)) ( return (error "Input cannot be atom"))) ; (M_state_main 'var '()) => error
       ((not (list? (firstlist parselist))) (return (error "Input cannot be single list"))) ; (M_state_main '(var a) '()) => error
-      
-      ((equal? 'return (command parselist)) (M_state_return (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))) ; return
-      
-      ((equal? 'var (command parselist)) (M_state_var (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))) ; variable 
-      ((equal? '= (command parselist)) (M_state_assign (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))) ; assignment
+      ((equal? 'return (command parselist)) (M_state_return (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))) ; return
+      ((equal? 'var (command parselist)) (M_state_var (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))) ; variable 
+      ((equal? '= (command parselist)) (M_state_assign (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))) ; assignment
       ((equal? 'if (command parselist)) (M_state_if (firstlist parselist) S (lambda (v) ((M_state_main (nextlist parselist) v return))))) ; if
-      ((equal? 'while (command parselist)) (M_state_while (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))) ; while
-
-      ;do new stuff
-      ((equal? 'begin (command parselist)) (M_state_block (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); creates new layer
-      ((equal? 'break (command parseList)) (M_state_break (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); break
-      ((equal? 'continue (command parseList))  (M_state_continue (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); continue
-      ((equal? 'throw (command parseList)) (M_state_throw (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); throw
-      ((equal? 'try (command parseList)) (M_state_try (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); try
-      
+      ((equal? 'while (command parselist)) (M_state_while (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))) ; while
+      ((equal? 'begin (command parselist)) (M_state_block (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))); creates new layer
+      ((equal? 'break (command parseList)) (M_state_break (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))); break
+      ((equal? 'continue (command parseList))  (M_state_continue (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))); continue
+      ((equal? 'throw (command parseList)) (M_state_throw (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))); throw
+      ((equal? 'try (command parseList)) (M_state_try (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v return)))); try
       (else (error "Something bad happened, broken parser?")))))
 
 ; Abstractions for M_state_main
@@ -69,14 +64,12 @@
 ;;;;;;;;;;;
 
 ; RETURN
-(define M_state_return ; only update return if it has a value of null
-  (lambda (statement S return)
+(define M_state_return ; only update return if it has a value of "null"
+  (lambda (statement S normal) ; breaks on test two?
     (cond
-      ((null? statement) (return (error "Parser is broken?")))
-      ((equal? 'null (get_mother_of_state 'return S)) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
-      (else (return S)))))
-
-(trace M_state_return)
+      ((null? statement) (normal (error "Parser is broken?")))
+      ((equal? 'null (get_mother_of_state 'return S)) (normal (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
+      (else (normal S)))))
 
 ; Abstractions for M_state_return
 ; Retrieves the expression of a return statement;
@@ -133,7 +126,7 @@
 
 ;;;;;;;;;;;
     
-; EXPRESSION - Evaluates expression
+; EXPRESSION - Evaluates expression (not a state function)
 (define M_expression
   (lambda (express S)
     (cond
@@ -165,7 +158,7 @@
       ((equal? '|| (operator express)) (or (M_expression (exp1 express) S) (M_expression (exp2 express) S)))
       ((equal? '!= (operator express)) (not (equal? (M_expression (exp1 express) S) (M_expression (exp2 express) S))))
       ((equal? '== (operator express)) (equal? (M_expression (exp1 express) S) (M_expression (exp2 express) S)))
-      ((equal? '< (operator express)) (< (M_expression (exp1 express) S) (M_expression (exp2 express) S))) ;something
+      ((equal? '< (operator express)) (< (M_expression (exp1 express) S) (M_expression (exp2 express) S))) ; something
       ((equal? '> (operator express)) (> (M_expression (exp1 express) S) (M_expression (exp2 express) S)))
       ((equal? '<= (operator express)) (<= (M_expression (exp1 express) S) (M_expression (exp2 express) S)))
       ((equal? '>= (operator express)) (>= (M_expression (exp1 express) S) (M_expression (exp2 express) S)))
@@ -205,7 +198,7 @@
 ; IF
 (define M_state_if
   (lambda (statement S return)
-    (if (null? (cdddr statement)) ; abstraction needed?
+    (if (null? (potentialElse statement))
         (if (M_expression (condition statement) S)
             (M_state_main (list (then statement)) S return)
             (return S))
@@ -232,7 +225,6 @@
 
 ;;;;;;;;;;;
 
-
 ; WHILE
 (define M_state_while
   (lambda (statement S return)
@@ -240,15 +232,18 @@
         (M_state_main (list (then statement)) S (lambda (v) (M_state_while statement v (lambda (v1) (return v1)))))
         (return S))))
 
+; used tail recursion instead of call/cc to make movement between various states easier - Huvra 
+
 ;;;;;;;;;;;
 
-;BLOCK
+; BLOCK
 (define M_state_block
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "messed up")))
-      (else (addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))))
+      (else (addLayer S (lambda (v) (M_state_main (body statement) v (lambda (v1) (removeLayer v1 return)))))))))
 
+; Helper functions for block
 (define addLayer
   (lambda (S return)
     (return (cons (list '() '()) S))))
@@ -257,6 +252,11 @@
   (lambda (S return)
     (return (cdr S))))
 
+; Abstraction for block
+(define body
+  (lambda (statement)
+    (cdr statement)))
+
 ;;;;;;;;;;;
 
 ; THROW
@@ -264,44 +264,51 @@
   (lambda (statement S return)
     (return (set_mother_of_state 'throw (exceptionType statement) S))))
 
-;abstraction
+; Abstraction for exception
 (define exceptionType
   (lambda (statement)
     (cadr statement)))
 
-; TRY - CATCH - FINALLY
+;;;;;;;;;;;
 
+; TRY/CATCH/FINALLY
+; Here we use the length of the statement to infer the inclusion of finally and/or catch. We hope to ensure the correct number of segments 
 (define M_state_try
   (lambda (statement S return)
     (cond
-      ((null? statement) (return (error "why tho?")))
+      ((null? statement) (return (error "Why are you here, tho?")))
       ((equals? (length statement) 4)
        (addLayer S (lambda (v)
                      (M_state_main (first_part statement) (lambda (v1)
                                                             (M_catch (second_part statement) v1 (lambda (v2 )
                                                                                                   (M_finally (second_part statement) v3 (lambda (v3)
-                                                                                                                                          (removeLayer v3 (lambda (v4) (return v4))))))))))))
+                                                                                                                                          (removeLayer v3 return))))))))))
       ((equals? (length statement) 2) (M_state_block statement S return))
       ((equals? (direction statement) 'catch)
        (addLayer S (lambda (v)
                      (M_state_main (first_part statement) (lambda (v1)
                                                             (M_catch (second_part statement) v1 (lambda (v2 )
-                                                                                                  (removeLayer v2 (lambda (v3) (return v3))))))))))
+                                                                                                  (removeLayer v2 return))))))))
       ((equals? (direction statement) 'finally)
        (addLayer S (lambda (v)
                      (M_state_main (first_part statement) (lambda (v1)
                                                             (M_finally (second_part statement) v1 (lambda (v2)
-                                                                                                    (removeLayer v2 (lambda (v3) (return v3))))))))))
-      (else (error "this project is insane")))))
+                                                                                                    (removeLayer v2 return))))))))
+      (else (error "This project is insane.")))))
 
+; CATCH
+; Only runs if a variable called throw has been instantiated
 (define M_catch
   (lambda (statement S return)
     ((equal? (exc statement) (get_mother_of_state 'throw S)) (M_state_main (caught statement) S return))))
 
+; FINALLY
+; Always run at the conclusion of corresponding try-block.
 (define M_finally
   (lambda (statement S return)
     ((M_state_block statement S return))))
 
+; Abstractions for try/catch/finally
 (define caught
   (lambda (catch_statement)
     (caaadr catch_statement)))
@@ -328,16 +335,15 @@
            
 ;;;;;;;;;;;
 
-;BREAK
+; BREAK
 (define M_state_break
   (lambda (S return)
     (removeLayer S (lambda (v) v))))
 
-;CONTINUE
+; CONTINUE
 (define M_state_continue
   (lambda (statement S return)
     (M_state_Main statement S return)))
-
 
 ;;;;;;;;;;;
 
