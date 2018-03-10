@@ -33,21 +33,23 @@
       ((null? parselist) (return S)) ; end of parse tree
       ((not (list? parselist)) ( return (error "Input cannot be atom"))) ; (M_state_main 'var '()) => error
       ((not (list? (firstlist parselist))) (return (error "Input cannot be single list"))) ; (M_state_main '(var a) '()) => error
-      ((equal? 'return (command parselist)) (M_state_main (nextlist parselist) (M_state_return (firstlist parselist) S return) return)) ; return
       
-      ((equal? 'var (command parselist)) (M_state_main (nextlist parselist) (M_state_var (firstlist parselist) S return) return)) ; variable 
-      ((equal? '= (command parselist)) (M_state_main (nextlist parselist) (M_state_assign (firstlist parselist) S return) return)) ; assignment
-      ((equal? 'if (command parselist)) (M_state_main (nextlist parselist) (M_state_if (firstlist parselist) S return) return)) ; if
-      ((equal? 'while (command parselist)) (M_state_main (nextlist parselist) (M_state_while (firstlist parselist) S return) return)) ; while
+      ((equal? 'return (command parselist)) (M_state_return (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))) ; return
+      
+      ((equal? 'var (command parselist)) (M_state_var (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))) ; variable 
+      ((equal? '= (command parselist)) (M_state_assign (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))) ; assignment
+      ((equal? 'if (command parselist)) (M_state_if (firstlist parselist) S (lambda (v) ((M_state_main (nextlist parselist) v return))))) ; if
+      ((equal? 'while (command parselist)) (M_state_while (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))) ; while
 
       ;do new stuff
-      ((equal? 'begin (command parselist)) (M_state_main (nextlist parselist) (M_state_block (firstlist parselist) S return) return)); creates new layer
-      ((equal? 'break (command parseList)) (M_state_main (nextlist parselist) (M_state_break (firstlist parselist) S return) return)); break
-      ((equal? 'continue (command parseList)) (M_state_main (nextlist parselist) (M_state_continue (firstlist parselist return) S) return)); continue
-      ((equal? 'throw (command parseList)) (M_state_main (nextlist parselist) (M_state_throw (firstlist parselist) S return) return)); throw
-      ((equal? 'try (command parseList)) (M_state_main (nextlist parselist) (M_state_try (firstlist parselist) S return) return)); try
+      ((equal? 'begin (command parselist)) (M_state_block (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); creates new layer
+      ((equal? 'break (command parseList)) (M_state_break (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); break
+      ((equal? 'continue (command parseList))  (M_state_continue (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); continue
+      ((equal? 'throw (command parseList)) (M_state_throw (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); throw
+      ((equal? 'try (command parseList)) (M_state_try (firstlist parselist) S (lambda (v) (M_state_main (nextlist parselist) v (lambda (v1) (return v1)))))); try
       
       (else (error "Something bad happened, broken parser?")))))
+
 ; Abstractions for M_state_main
 ; Retrieves command in next statement of parse tree
 (define command
@@ -74,6 +76,8 @@
       ((equal? 'null (get_mother_of_state 'return S)) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
       (else (return S)))))
 
+(trace M_state_return)
+
 ; Abstractions for M_state_return
 ; Retrieves the expression of a return statement;
 (define return_expression
@@ -89,8 +93,6 @@
       ((null? statement) (return (error "Parser is broken")))
       ((null? (var_list statement)) (return (set_mother_declare (varname statement) '? S)))
       (else (return (set_mother_declare (varname statement) (M_expression (var_expression statement) S) S))))))
-
-(trace M_state_var)
 
 ; Abstractions for M_state_var
 ; Variable name
@@ -128,8 +130,6 @@
 (define assign_expression
   (lambda (statement)
     (caddr statement)))
-
-(trace M_state_assign)
 
 ;;;;;;;;;;;
     
@@ -226,48 +226,36 @@
   (lambda (if_statement)
     (cadddr if_statement)))
 
+(define potentialElse
+  (lambda (if_statement)
+    (cdddr if_statement)))
+
 ;;;;;;;;;;;
 
 
 ; WHILE
 (define M_state_while
   (lambda (statement S return)
-    (call/cc
-     (lambda (break)
-       (M_state_while_helper statement S return break)))))
-
-(define M_state_while_helper
-  (lambda (statement S return break)
-    (cond
-      ((M_expression (condition statement) S)
-       (lambda (v)
-         (if v
-             (lambda (S2) (M_state_while_helper (list (then statement)) S2 return break)) ;call the the then statement on a second instance of state 
-             break)
-      (else (return S)))))))
+    (if (M_expression (condition statement) S)
+        (M_state_main (list (then statement)) S (lambda (v) (M_state_while statement v (lambda (v1) (return v1)))))
+        (return S))))
 
 ;;;;;;;;;;;
 
-; BLOCK
+;BLOCK
 (define M_state_block
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "messed up")))
-      (else (removeLayer (M_state_main (cdr statement) (addLayer S) return))))))
-
-(trace M_state_block)
-(trace M_state_main)
+      (else (addLayer S (lambda (v) (M_state_main (cdr statement) v (lambda (v1) (removeLayer v1 (lambda (v2) (return v2)))))))))))
 
 (define addLayer
-  (lambda (S)
-    (cons (list '() '()) S)))
+  (lambda (S return)
+    (return (cons (list '() '()) S))))
 
 (define removeLayer
-  (lambda (S)
-    (cdr S)))
-
-(trace addLayer)
-(trace removeLayer)
+  (lambda (S return)
+    (return (cdr S))))
 
 ;;;;;;;;;;;
 
@@ -347,8 +335,8 @@
 
 ;CONTINUE
 (define M_state_continue
-  (lambda (statement S return stop)
-    (stop (M_state_Main statement S return))))
+  (lambda (statement S return)
+    (M_state_Main statement S return)))
 
 
 ;;;;;;;;;;;
@@ -383,8 +371,6 @@
       ((if_variable_there v (car state)) (get_state_variable v (car state)))
        (else (get_mother_of_state v (cdr state))))))
 
-(define state '(( (f g h) (2 1 3)) ((a b) (10 11))))
-
 (define if_variable_there
   (lambda (var S)
     (cond
@@ -409,7 +395,6 @@
       ((eq? (caar S) var) (caadr S)) ; if variable is found return value
       (else (get_state_variable var (cons (cdar S) (list (cdadr S)))))))) ; reduce copy of state recrusively
 
-(trace get_state_variable)
 (trace get_mother_of_state)
 
 ; This function acts like assignment. It takes a variable and value and the state and returns the new state.
@@ -424,15 +409,12 @@
       ((eq? (caar S) var) (cons (car S) (list (append (list value) (cdadr S))))) ; if input variable is present then change the associated value
       (else (append_two_lists (cons (list (caar S)) (list (list (caadr S)))) (set_state_variable var value (cons (cdar S) (list (cdadr S)))))))))
 
-(trace set_state_variable)
 ; the last statement puts the first variable from state and it's value on the stack and later on appends it to the new state.
 ; I create my own append function because it has to append things like '((a b c) (10 11 12) => ("fake cons" '((a) (10)) '((b c)(11 12))) for example.
 
 (define append_two_lists ; "fake cons"
   (lambda (lis1 lis2)
     (cons (append (car lis1) (car lis2)) (list (append (cadr lis1) (cadr lis2))))))
-
-(trace M_expression)
 
 ; Abstractions for state handling ???
 
