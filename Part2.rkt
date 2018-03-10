@@ -205,7 +205,7 @@
 ; IF
 (define M_state_if
   (lambda (statement S return)
-    (if (null? (potentialElse statement)) ; abstraction needed?
+    (if (null? (cdddr statement)) ; abstraction needed?
         (if (M_expression (condition statement) S)
             (M_state_main (list (then statement)) S return)
             (return S))
