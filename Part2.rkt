@@ -71,7 +71,7 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "Parser is broken?")))
-      ((equal? 'null (get_mother_of_state 'return S)) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
+      ((equal? 'null (get_mother_of_state 'return (list S))) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
       (else (return S)))))
 
 ; Abstractions for M_state_return
@@ -248,14 +248,12 @@
 
 ;;;;;;;;;;;
 
-;BLOCK
-
-
+; BLOCK
 (define M_state_block
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "messed up")))
-      (else (M_state_main (cdr statement) (addLayer S) return) (addLayer S)))))
+      (else (removeLayer (M_state_main (cdr statement) (addLayer S) return))))))
 
 (trace M_state_block)
 (trace M_state_main)
