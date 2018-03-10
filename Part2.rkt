@@ -71,7 +71,7 @@
   (lambda (statement S return)
     (cond
       ((null? statement) (return (error "Parser is broken?")))
-      ((equal? 'null (get_mother_of_state 'return (list S))) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
+      ((equal? 'null (get_mother_of_state 'return S)) (return (set_mother_reassign 'return (M_expression (return_expression statement) S) S)))
       (else (return S)))))
 
 ; Abstractions for M_state_return
@@ -264,7 +264,7 @@
 
 (define removeLayer
   (lambda (S)
-    (cadr S)))
+    (cdr S)))
 
 (trace addLayer)
 (trace removeLayer)
@@ -447,8 +447,8 @@
 
 (parser "test1.java")
 (interpret "test1.java") ; => 20
-;(parser "test2.java")
-;(interpret "test2.java") ; => 164
+(parser "test2.java")
+(interpret "test2.java") ; => 164
 ;(parser "test3.java")
 ;(interpret "test3.java") ; => 32
 ;(parser "test4.java")
